@@ -1,4 +1,6 @@
 const kafka = require('kafka-node')
+const ServerProducer = require('./ServerProducer')
+const serverProducer = ServerProducer()
 
 const client = new kafka.KafkaClient('http://localhost:2181')
 
@@ -14,7 +16,7 @@ const options = {
   encoding: 'buffer'
 }
 
-const createConsumer = io => {
+const ServerConsumer = io => {
   const consumer = new kafka.Consumer(client, topics, options)
   console.log(process.env.TARGET)
   const target = process.env.TARGET || 'AAA'
@@ -44,7 +46,9 @@ const createConsumer = io => {
     }
     io.emit('sendBase', {userId, base})
     if (matchingIndices[userId] === target.length) {
-      io.emit('sendMatch', {userId, index: index - target.length + 2, target})
+      const match = {userId, index: index - target.length + 2, target}
+      io.emit('sendMatch', match)
+      serverProducer.sendRecord(match)
       matchingIndices[userId] = 0
     }
   })
@@ -62,4 +66,4 @@ const createConsumer = io => {
   return consumer
 }
 
-module.exports = createConsumer
+module.exports = ServerConsumer

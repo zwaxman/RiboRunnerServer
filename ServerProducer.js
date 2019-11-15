@@ -1,7 +1,64 @@
 const kafka = require('kafka-node')
 const uuid = require('uuid')
 
-const bases = ['A', 'C', 'G', 'T', '>', '.']
+const ServerProducer = () => {
+  // const userId = uuid.v4()
+
+  const client = new kafka.KafkaClient(
+    'http://localhost:2181',
+    'my-client-id',
+    {
+      sessionTimeout: 300,
+      spinDelay: 100,
+      retries: 2
+    }
+  )
+
+  const producer = new kafka.HighLevelProducer(client)
+
+  producer.on('ready', function() {
+    // console.log('Kafka Producer is connected and ready.')
+  })
+
+  // For this demo we just log producer errors to the console.
+  producer.on('error', function(error) {
+    console.error(error)
+  })
+
+  return {
+    sendRecord: ({index, userId, target}, callback = () => {}) => {
+      // if (!bases.includes(base)) {
+      //   return callback(new Error(`Invalid base`))
+      // }
+
+      const event = {
+        id: uuid.v4(),
+        timestamp: Date.now(),
+        userId,
+        index,
+        target
+      }
+
+      const buffer = new Buffer.from(JSON.stringify(event))
+
+      // Create a new payload
+
+      const record = [
+        {
+          topic: 'match',
+          messages: buffer,
+          attributes: 1 /* Use GZip compression for the payload */
+        }
+      ]
+
+      producer.send(record, callback)
+      // socket.emit('sendBase', {userId, base})
+      //Send record to Kafka and log result/error
+    }
+  }
+}
+
+module.exports = ServerProducer
 
 // module.exports = class Client extends kafka.KafkaClient {
 //   constructor(topics) {
@@ -64,52 +121,3 @@ const bases = ['A', 'C', 'G', 'T', '>', '.']
 //     // Create a new payload
 //   }
 // }
-
-const client = new kafka.KafkaClient('http://localhost:2181', 'my-client-id', {
-  sessionTimeout: 300,
-  spinDelay: 100,
-  retries: 2
-})
-
-const producer = new kafka.HighLevelProducer(client)
-
-producer.on('ready', function() {
-  // console.log('Kafka Producer is connected and ready.')
-})
-
-// For this demo we just log producer errors to the console.
-producer.on('error', function(error) {
-  console.error(error)
-})
-
-const KafkaService = {
-  sendRecord: ({userId, base, index, topic}, callback = () => {}) => {
-    if (!bases.includes(base)) {
-      return callback(new Error(`Invalid base`))
-    }
-
-    const event = {
-      id: uuid.v4(),
-      timestamp: Date.now(),
-      userId,
-      base,
-      index
-    }
-
-    const buffer = new Buffer.from(JSON.stringify(event))
-
-    // Create a new payload
-    const record = [
-      {
-        topic,
-        messages: buffer,
-        attributes: 1 /* Use GZip compression for the payload */
-      }
-    ]
-
-    //Send record to Kafka and log result/error
-    producer.send(record, callback)
-  }
-}
-
-module.exports = KafkaService
