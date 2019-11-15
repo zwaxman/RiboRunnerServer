@@ -1,5 +1,9 @@
 body {
   font-family: sans-serif;
+  word-wrap: break-word;
+  background-color: black;
+  color: greenyellow;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 a {
@@ -18,4 +22,8 @@ nav a {
 form div {
   margin: 1em;
   display: inline-block;
+}
+
+.match {
+  color: red;
 }
