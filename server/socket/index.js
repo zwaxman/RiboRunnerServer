@@ -15,6 +15,13 @@ module.exports = io => {
         () => {}
       )
     )
+    // Using below will get messages from earliest offset
+    // socket.on('addTopics', ({topics}) =>
+    //   serverConsumer.addTopics(
+    //     typeof topics === 'object' ? topics.map(topic => ({topic, offset:'earliest'})) : [{topic: topics, offest: 'earliest'}],
+    //     () => {}, true
+    //   )
+    // )
     socket.on('removeTopic', ({topic}) =>
       serverConsumer.removeTopics([topic], () => {})
     )

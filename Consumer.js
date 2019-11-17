@@ -1,13 +1,26 @@
+/* eslint-disable complexity */
 import React from 'react'
 import {connect} from 'react-redux'
 import {addTopics, removeTopic} from './client/store/selectedTopics'
 import {addTopic} from './client/store/topics'
+import {addTarget, removeTarget} from './client/store/targets'
 import socket from './client/socket'
+
+const validBases = 'ACGT'
+// could include >.X+*()/\
 
 class Consumer extends React.Component {
   constructor(props) {
     super(props)
-    this.state = {selectTopics: [], createTopic: '', removeTopic: ''}
+    this.state = {
+      selectTopics: [],
+      createTopic: '',
+      removeTopic: '',
+      newTarget: '',
+      removeTarget: '',
+      inputMessage: '',
+      description: ''
+    }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
   }
@@ -21,6 +34,20 @@ class Consumer extends React.Component {
       this.setState({selectTopics: []})
       value = e.target.value
     } else if (e.target.name === 'removeTopic') {
+      value = e.target.value
+    } else if (e.target.name === 'newTarget') {
+      const inputSequence = e.target.value.toUpperCase()
+      const lastBase = inputSequence[inputSequence.length - 1] || ''
+      if (validBases.includes(lastBase)) {
+        value = inputSequence
+      } else {
+        value = this.state.newTarget
+        this.setState({inputMessage: `Invalid base: ${lastBase}`})
+        setTimeout(() => this.setState({inputMessage: ''}), 2000)
+      }
+    } else if (e.target.name === 'description') {
+      value = e.target.value
+    } else if (e.target.name === 'removeTarget') {
       value = e.target.value
     }
     this.setState({[e.target.name]: value})
@@ -48,74 +75,241 @@ class Consumer extends React.Component {
     } else if (e.target.name === 'remove-topic') {
       this.props.removeTopic(this.state.removeTopic)
       socket.emit('removeTopic', {topic: this.state.removeTopic})
+    } else if (e.target.name === 'add-target') {
+      if (!this.props.targets.includes(e.target.newTarget.value)) {
+        this.props.addTarget({
+          sequence: e.target.newTarget.value,
+          description: e.target.description.value
+        })
+        socket.emit('addTarget', {target: e.target.newTarget.value})
+        this.setState({newTarget: '', description: ''})
+      } else {
+        this.setState({inputMessage: 'Target already exists'})
+      }
+    } else if (e.target.name === 'remove-target') {
+      this.props.removeTarget(this.state.removeTarget)
+      socket.emit('removeTarget', {target: this.state.removeTarget})
     }
   }
 
   render() {
-    const {users, topics, selectedTopics} = this.props
-    const {createTopic, selectTopics} = this.state
+    const {users, topics, selectedTopics, targets} = this.props
+    const {createTopic, selectTopics, inputMessage} = this.state
     return (
       <div>
-        {selectedTopics.length ? (
-          <div>Listening for topics: {selectedTopics.join(', ')}</div>
-        ) : (
-          <div>Please select topic(s) to listen for</div>
-        )}
-        <div id="topic-area">
-          <form name="add-topic" id="add-topic" onSubmit={this.handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="selectTopics">Select existing topic(s):</label>
-              <select multiple name="selectTopics" onChange={this.handleChange}>
-                {topics
-                  .filter(topic => !selectedTopics.includes(topic))
-                  .map(topic => (
-                    <option key={topic} selected={selectTopics === topic}>
-                      {topic}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>-or-</div>
-            <div className="form-group">
-              <label htmlFor="createTopic">Create new topic:</label>
-              <input
-                type="text"
-                name="createTopic"
-                value={createTopic}
-                onChange={this.handleChange}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!createTopic.length && !selectTopics.length}
-            >
-              Add topic(s)
-            </button>
-            {selectTopics.length || createTopic.length ? null : (
-              <div className="required">
-                Please select topic(s) to listen for
-              </div>
+        <div id="panel">
+          <div className="area">
+            {selectedTopics.length ? (
+              <div>Listening for topics: {selectedTopics.join(', ')}</div>
+            ) : (
+              <div>Please select topic(s) to listen for</div>
             )}
-            {selectedTopics.includes(createTopic) ? (
-              <div className="required">Already listening for that topic</div>
-            ) : null}
-          </form>
-          <div>
-            <form
-              name="remove-topic"
-              id="remove-topic"
-              onSubmit={this.handleSubmit}
-            >
-              <select name="removeTopic" onChange={this.handleChange}>
-                <option />
-                {selectedTopics.map(topic => (
-                  <option key={topic}>{topic}</option>
-                ))}
-              </select>
-              <button type="submit" disabled={!this.state.removeTopic.length}>
-                Remove topic
-              </button>
-            </form>
+            <div className="forms">
+              <form
+                name="add-topic"
+                className="add"
+                onSubmit={this.handleSubmit}
+              >
+                <div className="form-group">
+                  <label htmlFor="selectTopics">
+                    Select existing topic(s):
+                  </label>
+                  <select
+                    multiple
+                    name="selectTopics"
+                    onChange={this.handleChange}
+                  >
+                    {topics
+                      .filter(topic => !selectedTopics.includes(topic))
+                      .map(topic => (
+                        <option key={topic} selected={selectTopics === topic}>
+                          {topic}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>-or-</div>
+                <div className="form-group">
+                  <label htmlFor="createTopic">Create new topic:</label>
+                  <input
+                    type="text"
+                    name="createTopic"
+                    value={createTopic}
+                    onChange={this.handleChange}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!createTopic.length && !selectTopics.length}
+                >
+                  Add topic(s)
+                </button>
+                {selectTopics.length || createTopic.length ? null : (
+                  <div className="required">
+                    Please select topic(s) to listen for
+                  </div>
+                )}
+                {selectedTopics.includes(createTopic) ? (
+                  <div className="required">
+                    Already listening for that topic
+                  </div>
+                ) : null}
+              </form>
+              <form
+                name="remove-topic"
+                className="remove"
+                onSubmit={this.handleSubmit}
+              >
+                <div className="form-group">
+                  <label htmlFor="removeTopic">Remove topic:</label>
+                  <select name="removeTopic" onChange={this.handleChange}>
+                    <option />
+                    {selectedTopics.map(topic => (
+                      <option key={topic}>{topic}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="submit" disabled={!this.state.removeTopic.length}>
+                  Remove topic
+                </button>
+              </form>
+            </div>
+          </div>
+          <div className="area">
+            {targets.length ? (
+              <div id="targets">
+                <div className="target-col">
+                  <div className="target-header">Targets:</div>
+                  <div>
+                    {targets.map(target => (
+                      <div key={target.sequence} className="target">
+                        <div>{target.sequence}:</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div id="spacer" />
+                <div className="target-col">
+                  <div className="target-header">Descriptions:</div>
+                  <div>
+                    {targets.map(target => (
+                      <div key={target.description} className="target">
+                        <div>
+                          <em>
+                            {target.description.length
+                              ? target.description
+                              : 'no description'}
+                          </em>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>Please select target sequence(s) to match</div>
+            )}
+            <div className="forms">
+              <form
+                id="add-target"
+                name="add-target"
+                onSubmit={this.handleSubmit}
+              >
+                <div className="form-group">
+                  <label htmlFor="newTarget" className="container">
+                    Enter new target sequence:
+                  </label>
+                  <input
+                    type="text"
+                    name="newTarget"
+                    onChange={this.handleChange}
+                    value={this.state.newTarget}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="description" className="container">
+                    Description:
+                  </label>
+                  <input
+                    type="text"
+                    name="description"
+                    onChange={this.handleChange}
+                    value={this.state.description}
+                  />
+                </div>
+                <div id="inputMessage">{inputMessage}</div>
+                <div id="filters">
+                  <div className="filter">
+                    <label className="filter-label container">
+                      Antisense
+                      <input type="checkbox" />
+                      <span className="checkmark" />
+                    </label>
+                  </div>
+                  <div className="filter">
+                    <label className="filter-label container">
+                      Point mutations
+                      <input type="checkbox" />
+                      <span className="checkmark" />
+                    </label>
+                  </div>
+                  <div className="filter">
+                    <label className="filter-label container">
+                      Insertions
+                      <input type="checkbox" />
+                      <span className="checkmark" />
+                    </label>
+                  </div>
+                  <div className="filter">
+                    <label className="filter-label container">
+                      Deletions
+                      <input type="checkbox" />
+                      <span className="checkmark" />
+                    </label>
+                  </div>
+                  <div className="filter">
+                    <label className="filter-label container">
+                      Count tandem repeats
+                      <input type="checkbox" />
+                      <span className="checkmark" />
+                    </label>
+                  </div>
+                  <div className="filter">
+                    <label className="filter-label container">
+                      Translate amino acid
+                      <input type="checkbox" />
+                      <span className="checkmark" />
+                    </label>
+                  </div>
+                </div>
+                <button type="submit" disabled={!this.state.newTarget.length}>
+                  Add target
+                </button>
+              </form>
+              <form
+                name="remove-target"
+                className="remove"
+                onSubmit={() =>
+                  this.props.removeTarget(this.state.removeTarget)
+                }
+              >
+                <div className="form-group">
+                  <label htmlFor="removeTarget">Remove target:</label>
+                  <select name="removeTarget" onChange={this.handleChange}>
+                    <option />
+                    {targets.map(target => (
+                      <option key={target.sequence}>{target.sequence}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!this.state.removeTarget.length}
+                >
+                  Remove target
+                </button>
+              </form>
+            </div>
           </div>
         </div>
         {Object.keys(users).map(userId => {
@@ -140,12 +334,19 @@ class Consumer extends React.Component {
   }
 }
 
-const mapStateToProps = ({users, topics, selectedTopics}) => ({
+const mapStateToProps = ({users, topics, selectedTopics, targets}) => ({
   users,
   topics,
-  selectedTopics
+  selectedTopics,
+  targets
 })
 
-const mapDispatchToProps = {addTopics, addTopic, removeTopic}
+const mapDispatchToProps = {
+  addTopics,
+  addTopic,
+  removeTopic,
+  addTarget,
+  removeTarget
+}
 
 export default connect(mapStateToProps, mapDispatchToProps)(Consumer)
