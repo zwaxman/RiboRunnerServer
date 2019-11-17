@@ -1,14 +1,9 @@
+/* eslint-disable handle-callback-err */
 const kafka = require('kafka-node')
 const ServerProducer = require('./ServerProducer')
 const serverProducer = ServerProducer()
 
-const client = new kafka.KafkaClient('http://localhost:2181')
-
-const topics = [
-  {
-    topic: process.env.TOPIC || 'AAA'
-  }
-]
+const topics = []
 const options = {
   autoCommit: true,
   fetchMaxWaitMs: 1000,
@@ -16,9 +11,21 @@ const options = {
   encoding: 'buffer'
 }
 
-const ServerConsumer = io => {
+const ServerConsumer = socket => {
+  let client = new kafka.KafkaClient('http://localhost:2181')
   const consumer = new kafka.Consumer(client, topics, options)
-  console.log(process.env.TARGET)
+  console.log('Creating consumer')
+
+  client = new kafka.KafkaClient('http://localhost:2181')
+  const admin = new kafka.Admin(client)
+  admin.listTopics((err, topicsList) => {
+    const filteredTopics = Object.keys(topicsList[1].metadata).filter(
+      topic => !topic.startsWith('match') && topic !== '__consumer_offsets'
+    )
+    socket.emit('sendTopics', filteredTopics)
+    console.log('sending topics', filteredTopics)
+  })
+
   const target = process.env.TARGET || 'AAA'
   let matchingIndices = {}
 
@@ -44,10 +51,10 @@ const ServerConsumer = io => {
     } else {
       matchingIndices[userId] = 0
     }
-    io.emit('sendBase', {userId, base})
+    socket.emit('sendBase', {userId, base})
     if (matchingIndices[userId] === target.length) {
       const match = {userId, index: index - target.length + 2, target}
-      io.emit('sendMatch', match)
+      socket.emit('sendMatch', match)
       serverProducer.sendRecord(match)
       matchingIndices[userId] = 0
     }
@@ -56,6 +63,20 @@ const ServerConsumer = io => {
   consumer.on('error', function(err) {
     console.log('error', err)
   })
+
+  consumer.listTopics = () => {
+    return admin.listTopics((err, topicsList) => {
+      return Object.keys(topicsList[1].metadata).filter(
+        topic => !topic.startsWith('match') && topic !== '__consumer_offsets'
+      )
+    })
+  }
+
+  consumer.createTopic = topic => {
+    admin.createTopics([topic], (err, res) => {
+      err ? console.log(err) : console.log(res)
+    })
+  }
 
   process.on('SIGINT', function() {
     consumer.close(true, function() {

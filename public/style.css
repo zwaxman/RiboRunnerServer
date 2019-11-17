@@ -19,11 +19,61 @@ nav a {
   margin: 1em;
 }
 
-form div {
-  margin: 1em;
-  display: inline-block;
-}
-
 .match {
   color: red;
+}
+
+button,
+select,
+input {
+  background-color: black;
+  border: 1px solid yellowgreen;
+  color: yellowgreen;
+  border-radius: 5px;
+}
+
+input:focus,
+select:focus,
+button:focus,
+input:hover,
+select:hover,
+button:hover {
+  box-shadow: 0 0 10px yellowgreen;
+  outline: none;
+}
+
+.form-group label {
+  margin-right: 10px;
+}
+
+select {
+  min-width: 50px;
+}
+
+#add-topic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#topic-area {
+  display: flex;
+  justify-content: space-evenly;
+  line-height: 25px;
+  align-items: center;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.required {
+  font-size: 10px;
+}
+
+#remove-topic {
+  display: flex;
+  flex-direction: column;
 }

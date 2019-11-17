@@ -45,13 +45,14 @@ const ServerProducer = () => {
 
       const record = [
         {
-          topic: 'match',
+          topic: `match_${userId}`,
           messages: buffer,
           attributes: 1 /* Use GZip compression for the payload */
         }
       ]
 
-      producer.send(record, callback)
+      producer.send(record, () => console.log('sent data'))
+      console.log('sending record:', record)
       // socket.emit('sendBase', {userId, base})
       //Send record to Kafka and log result/error
     }
