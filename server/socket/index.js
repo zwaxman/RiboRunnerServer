@@ -25,5 +25,11 @@ module.exports = io => {
     socket.on('removeTopic', ({topic}) =>
       serverConsumer.removeTopics([topic], () => {})
     )
+    socket.on('addTarget', target => {
+      console.log(target)
+    })
+    socket.on('removeTarget', target => {
+      console.log(target)
+    })
   })
 }

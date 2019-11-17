@@ -26,7 +26,6 @@ const ServerConsumer = socket => {
     console.log('sending topics', filteredTopics)
   })
 
-  const target = process.env.TARGET || 'AAA'
   let matchingIndices = {}
 
   consumer.on('message', function(message) {
@@ -44,7 +43,7 @@ const ServerConsumer = socket => {
     //     createdAt: new Date()
     // });
     if (!matchingIndices[userId]) {
-      matchingIndices[userId] = 0
+      matchingIndices[userId] = []
     }
     if (base === target[matchingIndices[userId]]) {
       matchingIndices[userId]++

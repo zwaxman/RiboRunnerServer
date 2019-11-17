@@ -100,10 +100,13 @@ class Consumer extends React.Component {
         <div id="panel">
           <div className="area">
             {selectedTopics.length ? (
-              <div>Listening for topics: {selectedTopics.join(', ')}</div>
+              <div className="target-header">Topics:</div>
             ) : (
-              <div>Please select topic(s) to listen for</div>
+              <div className="target-header">
+                Please select topic(s) to listen for
+              </div>
             )}
+            <div>{selectedTopics.join(', ')}</div>
             <div className="forms">
               <form
                 name="add-topic"
@@ -136,6 +139,7 @@ class Consumer extends React.Component {
                     name="createTopic"
                     value={createTopic}
                     onChange={this.handleChange}
+                    autoComplete="off"
                   />
                 </div>
                 <button
@@ -189,7 +193,7 @@ class Consumer extends React.Component {
                   </div>
                 </div>
                 <div id="spacer" />
-                <div className="target-col">
+                <div className="target-col" id="descriptions">
                   <div className="target-header">Descriptions:</div>
                   <div>
                     {targets.map(target => (
@@ -207,7 +211,9 @@ class Consumer extends React.Component {
                 </div>
               </div>
             ) : (
-              <div>Please select target sequence(s) to match</div>
+              <div className="target-header">
+                Please enter target sequence(s) to match
+              </div>
             )}
             <div className="forms">
               <form
@@ -224,6 +230,7 @@ class Consumer extends React.Component {
                     name="newTarget"
                     onChange={this.handleChange}
                     value={this.state.newTarget}
+                    autoComplete="off"
                   />
                 </div>
                 <div className="form-group">
@@ -235,6 +242,7 @@ class Consumer extends React.Component {
                     name="description"
                     onChange={this.handleChange}
                     value={this.state.description}
+                    autoComplete="off"
                   />
                 </div>
                 <div id="inputMessage">{inputMessage}</div>
@@ -289,9 +297,7 @@ class Consumer extends React.Component {
               <form
                 name="remove-target"
                 className="remove"
-                onSubmit={() =>
-                  this.props.removeTarget(this.state.removeTarget)
-                }
+                onSubmit={this.handleSubmit}
               >
                 <div className="form-group">
                   <label htmlFor="removeTarget">Remove target:</label>

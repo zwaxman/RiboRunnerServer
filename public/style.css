@@ -54,6 +54,7 @@ select {
   display: flex;
   flex-direction: row;
   justify-content: space-evenly;
+  border-bottom: 1px solid yellowgreen;
 }
 
 .form-group {
@@ -88,6 +89,7 @@ nav {
 
 .area {
   width: 50%;
+  text-align: center;
 }
 
 #add-target {
@@ -192,4 +194,12 @@ nav {
 
 .target-col:nth-of-type(1) {
   text-align: right;
+}
+
+#descriptions {
+  text-align: left;
+}
+
+.target-header {
+  font-weight: 600;
 }

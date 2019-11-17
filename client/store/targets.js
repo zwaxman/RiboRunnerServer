@@ -40,7 +40,7 @@ export default function(state = initialState, action) {
         (A, B) => (A.sequence > B.sequence ? 1 : -1)
       )
     case REMOVE_TARGET:
-      return state.filter(target => target !== action.target)
+      return state.filter(target => target.sequence !== action.target)
     default:
       return state
   }
