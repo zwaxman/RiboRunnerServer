@@ -81,7 +81,10 @@ class Consumer extends React.Component {
           sequence: e.target.newTarget.value,
           description: e.target.description.value
         })
-        socket.emit('addTarget', {target: e.target.newTarget.value})
+        socket.emit('addTarget', {
+          sequence: e.target.newTarget.value,
+          description: e.target.description.value
+        })
         this.setState({newTarget: '', description: ''})
       } else {
         this.setState({inputMessage: 'Target already exists'})
@@ -99,14 +102,17 @@ class Consumer extends React.Component {
       <div>
         <div id="panel">
           <div className="area">
-            {selectedTopics.length ? (
-              <div className="target-header">Topics:</div>
-            ) : (
-              <div className="target-header">
-                Please select topic(s) to listen for
-              </div>
-            )}
-            <div>{selectedTopics.join(', ')}</div>
+            <div id="topics">
+              {selectedTopics.length ? (
+                <div className="target-header">Topics:</div>
+              ) : (
+                <div className="target-header">
+                  Please select topic(s) to listen for
+                </div>
+              )}
+              <div>{selectedTopics.join(', ')}</div>
+            </div>
+
             <div className="forms">
               <form
                 name="add-topic"
@@ -211,7 +217,7 @@ class Consumer extends React.Component {
                 </div>
               </div>
             ) : (
-              <div className="target-header">
+              <div className="target-header" id="targets">
                 Please enter target sequence(s) to match
               </div>
             )}
@@ -319,19 +325,22 @@ class Consumer extends React.Component {
           </div>
         </div>
         {Object.keys(users).map(userId => {
-          const {sequence} = users[userId]
+          const {sequence, matches} = users[userId]
           return (
-            <div key={userId}>
-              {sequence.map(
-                (base, i) =>
-                  base.match ? (
-                    <span key={i} className="match">
-                      {base.base}
-                    </span>
-                  ) : (
-                    base.base
-                  )
-              )}
+            <div key={userId} className="user-container">
+              <div>Sequence ID: {userId}</div>
+              <div className="sequence">
+                {sequence.map(
+                  (base, i) =>
+                    base.match ? (
+                      <span key={i} className="match">
+                        {base.base}
+                      </span>
+                    ) : (
+                      base.base
+                    )
+                )}
+              </div>
             </div>
           )
         })}

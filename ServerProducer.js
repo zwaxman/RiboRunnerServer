@@ -26,7 +26,7 @@ const ServerProducer = () => {
   })
 
   return {
-    sendRecord: ({index, userId, target}, callback = () => {}) => {
+    sendRecord: (match, callback = () => {}) => {
       // if (!bases.includes(base)) {
       //   return callback(new Error(`Invalid base`))
       // }
@@ -34,9 +34,7 @@ const ServerProducer = () => {
       const event = {
         id: uuid.v4(),
         timestamp: Date.now(),
-        userId,
-        index,
-        target
+        ...match
       }
 
       const buffer = new Buffer.from(JSON.stringify(event))
@@ -45,7 +43,7 @@ const ServerProducer = () => {
 
       const record = [
         {
-          topic: `match_${userId}`,
+          topic: `match_${match.userId}`,
           messages: buffer,
           attributes: 1 /* Use GZip compression for the payload */
         }

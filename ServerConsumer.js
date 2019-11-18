@@ -3,7 +3,7 @@ const kafka = require('kafka-node')
 const ServerProducer = require('./ServerProducer')
 const serverProducer = ServerProducer()
 
-const topics = []
+const initialTopics = []
 const options = {
   autoCommit: true,
   fetchMaxWaitMs: 1000,
@@ -13,7 +13,29 @@ const options = {
 
 const ServerConsumer = socket => {
   let client = new kafka.KafkaClient('http://localhost:2181')
-  const consumer = new kafka.Consumer(client, topics, options)
+  const consumer = new kafka.Consumer(client, initialTopics, options)
+  consumer.topics = initialTopics
+  consumer.targets = new Map()
+
+  consumer._addTopics = function(topics) {
+    topics = typeof topics === 'object' ? topics : [topics]
+    this.addTopics(topics, () => {})
+    this.topics = [...this.topics, ...topics]
+  }
+
+  consumer._removeTopic = function(topic) {
+    this.removeTopics([topic], () => {})
+    this.topics = this.topics.filter(t => t !== topic)
+  }
+
+  consumer._addTarget = function(target) {
+    this.targets.set(target.sequence, target.description)
+  }
+
+  consumer._removeTarget = function(target) {
+    this.targets.delete(target)
+  }
+
   console.log('Creating consumer')
 
   client = new kafka.KafkaClient('http://localhost:2181')
@@ -26,37 +48,43 @@ const ServerConsumer = socket => {
     console.log('sending topics', filteredTopics)
   })
 
-  let matchingIndices = {}
+  const users = new Map()
 
   consumer.on('message', function(message) {
-    // Read string into a buffer.
     var buf = new Buffer(message.value, 'binary')
     var decodedMessage = JSON.parse(buf.toString())
     let {userId, base, index} = decodedMessage
-    //Events is a Sequelize Model Object.
-    // return Events.create({
-    //     id: decodedMessage.id,
-    //     type: decodedMessage.type,
-    //     userId: decodedMessage.userId,
-    //     sessionId: decodedMessage.sessionId,
-    //     data: JSON.stringify(decodedMessage.data),
-    //     createdAt: new Date()
-    // });
-    if (!matchingIndices[userId]) {
-      matchingIndices[userId] = []
-    }
-    if (base === target[matchingIndices[userId]]) {
-      matchingIndices[userId]++
-    } else {
-      matchingIndices[userId] = 0
-    }
     socket.emit('sendBase', {userId, base})
-    if (matchingIndices[userId] === target.length) {
-      const match = {userId, index: index - target.length + 2, target}
-      socket.emit('sendMatch', match)
-      serverProducer.sendRecord(match)
-      matchingIndices[userId] = 0
+
+    if (!users.has(userId)) {
+      users.set(userId, new Map())
     }
+
+    const user = users.get(userId)
+    Array.from(consumer.targets.keys()).forEach(targetSequence => {
+      if (!user.has(targetSequence)) {
+        user.set(targetSequence, 0)
+      }
+      let numMatchingIndices = user.get(targetSequence)
+      if (base === targetSequence[numMatchingIndices]) {
+        numMatchingIndices++
+        if (numMatchingIndices === targetSequence.length) {
+          const match = {
+            userId,
+            index: index - targetSequence.length + 2,
+            target: targetSequence,
+            description: consumer.targets.get(targetSequence),
+            topics: consumer.topics
+          }
+          socket.emit('sendMatch', match)
+          serverProducer.sendRecord(match)
+          numMatchingIndices = 0
+        }
+      } else {
+        numMatchingIndices = +(base === targetSequence[0])
+      }
+      user.set(targetSequence, numMatchingIndices)
+    })
   })
 
   consumer.on('error', function(err) {

@@ -203,3 +203,23 @@ nav {
 .target-header {
   font-weight: 600;
 }
+
+.user-container {
+  margin: 25px 15px;
+  padding: 3px;
+  border-top: 1px solid yellowgreen;
+  border-bottom: 1px solid yellowgreen;
+  line-height: 30px;
+}
+
+.user-container .sequence {
+  margin: 10px 15px;
+  line-height: 20px;
+}
+
+#topics,
+#targets {
+  padding: 10px;
+  border: 1px solid yellowgreen;
+  border-radius: 5px;
+}

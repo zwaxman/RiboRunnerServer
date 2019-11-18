@@ -1,6 +1,7 @@
 import io from 'socket.io-client'
 import {addBase, addMatch} from './store/users'
 import {setTopics} from './store/topics'
+import {setTargets} from './store/targets'
 import store from './store'
 
 const socket = io(window.location.origin)
